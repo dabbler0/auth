@@ -2,10 +2,13 @@ CC=gcc
 CFLAGS=-std=c99
 CLIBS=-lm -lgmp -lcrypto -ljansson
 
-all: auth.o generate_prime.o
+all: bin bin/auth.o bin/generate_prime.o
 
-auth.o:
-	$(CC) -c auth.c -o auth.o $(CFLAGS) $(CLIBS)
+bin:
+	mkdir bin
 
-generate_prime.o:
-	$(CC) generate_prime.c -o generate_prime.o $(CFLAGS) $(CLIBS)
+bin/auth.o:
+	$(CC) -c auth.c -o bin/auth.o $(CFLAGS) $(CLIBS)
+
+bin/generate_prime.o:
+	$(CC) generate_prime.c -o bin/generate_prime.o $(CFLAGS) $(CLIBS)

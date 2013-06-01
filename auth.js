@@ -12,28 +12,30 @@
       prime_size = bitSize(N);
 
   //Function for the first SRP pass:
-  function authenticate(username, password, target, callback) {
-    var A, a;
-    $.ajax({
-      "url":target,
-      data:{
-        username:username,
-        random:bigInt2str((A = powMod(g, (a = int2bigInt(randBigInt(prime_size, 0))), N)), 16);
-      },
-      dataType:"json",
-      success:function(data) {
-        var B = str2bigInt(data.B, 16),
-            u = hash(bigInt2str(A) + data.B),
-            x = hash(data.salt + password),
-            //Compute (B - kg^x) ^ (a + ux) (the unhashed session key):
-            S = powMod(mod(sub(B, mult(k, powMod(g, x, N))), N), add(a, mult(u, x)),
-            //Compute hash(S) (the hashed session key):
-            K = hash(bigInt2str(S));
-        //Execute the callback function on K.
-        callback(K);
-      }
-    });
+  function generate_A(N, g) {
+    return powMod(g, (a = int2bigInt(randBigInt(bitSize(N), 0))), N);
   }
+
+  //Function for computing the session key:
+  function generate_session_key(data) {
+    var u = hash(bigInt2str(data.A) + data.B),
+        x = hash(data.salt + data.password),
+        //Compute (B - kg^x) ^ (a + ux) (the unhashed session key):
+        S = powMod(mod(sub(data.B, mult(data.k, powMod(data.g, x, data.N))), data.N), add(data.a, mult(u, x))),
+        //Compute hash(S) (the hashed session key):
+        K = hash(bigInt2str(S, 16)),
+        //Compute a validation the validation hashes for this key:
+        M = hash(bigInt2str(add(data.N, data.g), 16) + data.uname + data.salt + bigInt2str(data.A, 16) + bigInt2str(data.B, 16) + bigInt2str(K, 16)),
+        V = hash(bigInt2str(data.A, 16) + bigInt2str(M) + bigInt2str(K));
+    return {
+      key:K,
+      client_validator:M
+      server_validator:V
+    };
+  }
+
+  //Function for validating a session key:
+  function validate_session_key(
 
   //Set up for use in external things:
   window["authenticate"] = authenticate;
