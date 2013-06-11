@@ -34,9 +34,16 @@
     };
   }
 
-  //Function for validating a session key:
-  function validate_session_key(
+  function encrypt_message(message, bf) {
+    var checksum = hex_md5(message);
+    return {
+      guard:bf.encrypt(checksum),
+      message:bf.encrypt(message)
+    };
+  }
 
   //Set up for use in external things:
-  window["authenticate"] = authenticate;
+  window["generate_A"] = generate_A;
+  window["generate_session_key"] = generate_session_key;
+  window["encrypt_message"] = encrypt_message;
 }(window));

@@ -298,3 +298,28 @@ void compute_client_validation(mpz_t r, mpz_t A, mpz_t M, mpz_t K) {
 
   hash(r, mclear);
 }
+
+
+const char* validated_decryption(const char* message, int mlen,  const char* guard, int glen, mpz_t K) {
+  char *d_message = decrypt(message, mlen, K),
+       *d_guard = decrypt(d_guard, glen, K);
+  mpz_t message_hash, guard_mpz;
+  mpz_init(message_hash);
+  hash(message_hash, message);
+
+  mpz_init(guard_mpz);
+  mpz_set_str(guard_mpz, guard, 16);
+
+  if (mpz_cmp(message_hash, guard_mpz)) {
+    mpz_clear(message_hash);
+    mpz_clear(guard_mpz);
+    free(d_guard);
+    return d_message;
+  }
+  else {
+    mpz_clear(message_hash);
+    mpz_clear(guard_mpz);
+    free(d_guard);
+    return NULL;
+  }
+}
