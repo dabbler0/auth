@@ -4,6 +4,7 @@ import ssl
 from Crypto import Random
 from Crypto.Random import random
 from Crypto.Cipher import AES
+import base64
 import math
 import sqlite3
 import simplejson as json
@@ -43,6 +44,12 @@ LARGE_PRIME = 127921898854378584192154927333803672587112053812898263967845235041
 GENERATOR = 2
 MUL_PARAM = 3
 
+def intoHex(n):
+  hexed = hex(n)[2:].upper()
+  if hexed[len(hexed) - 1] == "L":
+    hexed = hexed[0 : len(hexed) - 1]
+  return hexed
+
 def hash(*args):
   """
     Compute the hash of the concatenated string from some arguments
@@ -50,8 +57,8 @@ def hash(*args):
 
   hashString = ""
   for arg in args:
-    if isinstance(arg, int):
-      hashString += hex(arg)[2:]
+    if isinstance(arg, int) or isinstance(arg, long):
+      hashString += intoHex(arg)
     elif isinstance(arg, str):
       hashString += arg
     else:
@@ -61,7 +68,7 @@ def hash(*args):
 def hexify(string):
   hexed = ""
   for character in string:
-    hexed += hex(ord(character))[2:].zfill(2)
+    hexed += hex(ord(character))[2:].zfill(2).upper()
   return hexed
 
 def dehexify(string):
@@ -102,12 +109,13 @@ def getHex(conn, col, uname):
   
   return int(c.fetchone()[col], 16)
 
-def setHex(conn, col, uname, int_value):
+def setHex(conn, col, uname, value):
   """
     Set a hex column value for this user, or create a user if he doesn't yet exist
   """
 
-  value = hex(int_value)[2:]
+  if (isinstance(value, int)):
+    value = intoHex(value)
   c = conn.cursor()
   c.execute("""
     SELECT * FROM users WHERE uname=? LIMIT 1
@@ -124,6 +132,29 @@ def setHex(conn, col, uname, int_value):
     """ % getColumnName(col), (value, uname))
   conn.commit()
 
+def createUser(conn, uname, verifier, salt):
+  """
+    Create a user row if it doesn't yet exist.
+  """
+
+  c = conn.cursor()
+  c.execute("""
+    SELECT * FROM users WHERE uname=? LIMIT 1
+  """, (uname,))
+  rows = c.fetchall()
+  if (len(rows) > 0):
+    return False
+  else:
+    if isinstance(verifier, int):
+      verifier = intoHex(verfier)
+    if isinstance(salt, int):
+      salt = intoHex(salt)
+    c.execute("""
+      INSERT INTO users (uname, verifier, salt) VALUES (?, ?, ?)
+    """, (uname, verifier, salt))
+    conn.commit()
+    return True
+
 def generateKey(conn, uname, A):
   salt = getHex(conn, SALT, uname)
   verifier = getHex(conn, VERIFIER, uname)
@@ -131,35 +162,39 @@ def generateKey(conn, uname, A):
   B = (MUL_PARAM * verifier + pow(GENERATOR, b, LARGE_PRIME)) % LARGE_PRIME
   u = hash(A, B)
   S = pow(A * pow(verifier, u, LARGE_PRIME), b, LARGE_PRIME)
-  K = hashlib.sha256(hex(S)[2:]).digest() #SHA256 to generate a 32-bit AES key
+  K = hashlib.sha256(intoHex(S)).digest() #SHA256 to generate a 32-bit AES key
+  
   return {
-    "M": hash(hash(LARGE_PRIME) ^ hash(GENERATOR), hash(uname), salt, A, B, K),
+    "s": intoHex(salt),
+    "M": hash(LARGE_PRIME, hash(uname), salt, A, B, K),
     "K": K,
-    "B": B
+    "B": intoHex(B)
   }
 
 def encrypt(key, message):
   iv = Random.new().read(AES.block_size)
   encrypter = AES.new(key, AES.MODE_CBC, iv)
+  checksum = hashlib.md5(message).hexdigest().upper()
   true_length = len(message)
   message += "\0" * (16 - (len(message) % 16)) #Pad the message until it is a full number of blocks
-  checksum = hashlib.md5(message).hexdigest()
-  ciphertext = iv + encrypter.encrypt(message)
+  ciphertext = encrypter.encrypt(message)
   return json.dumps({
     "length":true_length,
-    "ciphertext":hexify(ciphertext),
+    "iv": base64.b64encode(iv),
+    "ciphertext":base64.b64encode(ciphertext),
     "checksum":checksum
   })
 
 def decrypt(key, json_message):
   message = json.loads(json_message)
-  dehexed = dehexify(message["ciphertext"])
-  iv = dehexed[:AES.block_size]
+  message_text = base64.b64decode(message["ciphertext"])
+  iv = base64.b64decode(message["iv"])
   encrypter = AES.new(key, AES.MODE_CBC, iv)
-  decrypted = encrypter.decrypt(dehexed[AES.block_size:])
-  checksum =  hashlib.md5(decrypted).hexdigest()
+  decrypted = encrypter.decrypt(message_text)[:message["length"]]
+  checksum =  hashlib.md5(decrypted).hexdigest().upper()
+  print "Checksum: %s" % checksum
   if (checksum == message["checksum"]):
-    return decrypted[:message["length"]]
+    return decrypted
   else:
     # If the checksum doesn't match the text, either the 
     # channel is corrupted or the client isn't who they say they are

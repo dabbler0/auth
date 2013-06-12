@@ -1,8 +1,100 @@
 <html>
   <head>
-    <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+    <script src="/jslib/jquery.min.js"></script>
+    <script src="/jslib/rollups/aes.js"></script>
+    <script src="/jslib/rollups/md5.js"></script>
+    <script src="/jslib/rollups/sha512.js"></script>
+    <script src="/jslib/rollups/sha256.js"></script>
+    <script src="/jslib/BigInt.js"></script>
+    <script src="/jslib/auth.js"></script>
     <script>
-      var b = CryptoJS.AES.encrypt("Hello World",  "hello");
+      $(function() {
+        var key;
+        $("#auth").click(function() {
+          var rand = generateA(),
+              uname = $("#auth_uname").val()
+              pass = $("#auth_pass").val();
+          $.ajax({
+            url:"/authenticate",
+            method:"GET",
+            data:{
+              "uname": uname,
+              "A": bigInt2str(rand.A, 16)
+            },
+            dataType:"json",
+            success:function(data) {
+              var client_data = {
+                    "uname": uname,
+                    "password": pass,
+                    "a": rand.a,
+                    "A": rand.A
+                  },
+                  server_data = {
+                    "B": data.B,
+                    "salt": data.s
+                  },
+                  kdict = generateKey(client_data, server_data);
+               console.log(kdict, kdict.K.toString(CryptoJS.enc.Hex));
+               key = kdict.K;
+            }
+          });
+        });
+        $("#reg").click(function() {
+          var uname = $("#reg_uname").val(),
+              pass = $("#reg_pass").val(),
+              verifier = getVerifier(pass);
+          console.log(bigInt2str(verifier.v, 16), bigInt2str(verifier.s, 16));
+          $.ajax({
+            url:"/register",
+            method:"GET",
+            data:{
+              "uname": uname,
+              "verifier": bigInt2str(verifier.v, 16),
+              "salt": bigInt2str(verifier.s, 16), 
+            },
+            dataType:"json",
+            success: function(data) {
+              console.log(data);
+            }
+          });
+        });
+        $("#send").click(function() {
+          var uname = $("#mess_uname").val(),
+              message = $("#cleartext").val();
+          $.ajax({
+            url: "/echo",
+            method: "GET",
+            data: {
+              "uname": uname,
+              "message": JSON.stringify(encrypt(key, message))
+            },
+            dataType:"json",
+            success:function(data) {
+              console.log(data.cleartext);
+            }
+          });
+        });
+      });
     </script>
   </head>
+  <body>
+    <div id="register">
+      Register<br/>
+      <input id="reg_uname"/>
+      <input id="reg_pass"/>
+      <button id="reg">Go</button>
+    </div>
+    <div id="authenticate">
+      Authenticate<br/>
+      <input id="auth_uname"/>
+      <input id="auth_pass"/>
+      <button id="auth"/>Go</button>
+    </div>
+    <div id="message">
+      Decrypt a message<br/>
+      <input id="mess_uname"/>
+      <textarea id="cleartext"></textarea>
+      <button id="send">Go</button>
+    </div>
+  </body>
 </html>
