@@ -1,5 +1,12 @@
 <html>
   <head>
+    <!--
+      Usage example for the auth library (auth.js and associated auth.py).
+
+      Created by Anthony Bau in 2013.
+      
+      This software is public domain.
+    -->
     <script src="/jslib/jquery.min.js"></script>
     <script src="/jslib/rollups/aes.js"></script>
     <script src="/jslib/rollups/md5.js"></script>
@@ -7,6 +14,79 @@
     <script src="/jslib/rollups/sha256.js"></script>
     <script src="/jslib/BigInt.js"></script>
     <script src="/jslib/auth.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'/>
+    <style>
+      body {
+        font-family:'Lato', Arial, sans-serif;
+      }
+      .hidden {
+        display:none;
+      }
+      .form {
+        border:1px solid #000;
+        padding:10px;
+        width:350px;
+      }
+      .form_title {
+        font-size:30px;
+      }
+      .form_input {
+        box-shadow: 0px 0px 3px #888 inset;
+        border: 1px solid #000;
+        height:30px;
+        font-size:20px;
+        font-family:'Lato', Arial, sans-serif;
+        width:200px;
+        outline:none;
+        transition: box-shadow 0.3s;
+      }
+      .form_input:focus {
+        box-shadow: 0px 0px 4px #7A0001 inset;
+      }
+      .right_aligned {
+        text-align:right;
+      }
+      .form_button {
+        display:inline-block;
+        border:1px solid #888;
+        border-radius:2px;
+        padding-top:5px;
+        padding-bottom:5px;
+        padding-left:10px;
+        padding-right:10px;
+        text-transform:uppercase;
+        outline:none;
+        font-size:15px;
+        cursor:hand;
+        background:#D12336;
+        font-family:'Lato', Arial, sans-serif;
+        color:#fff;
+        transition: background-color 0.3s;
+      }
+      .form_button:hover, .form_button:focus {
+        background-color:#F13340;
+      }
+      .feild {
+        padding:5px;
+      }
+      .feild_name {
+        width:100px;
+        font-size:18px;
+        display:inline-block;
+      }
+      .form_large_textarea {
+        width:100%;
+        height:100px;
+        margin-top:10px;
+        resize:vertical;
+        border:1px solid #000;
+        box-shadow: 0px 0px 3px #888 inset;
+        transition: box-shadow 0.3s;
+      }
+      .form_large_textarea:focus {
+        box-shadow: 0px 0px 4px #7A0001 inset;
+      }
+    </style>
     <script>
       $(function() {
         var key;
@@ -34,7 +114,6 @@
                     "salt": data.s
                   },
                   kdict = generateKey(client_data, server_data);
-               console.log(kdict, kdict.K.toString(CryptoJS.enc.Hex));
                key = kdict.K;
             }
           });
@@ -78,23 +157,67 @@
     </script>
   </head>
   <body>
-    <div id="register">
-      Register<br/>
-      <input id="reg_uname"/>
-      <input id="reg_pass"/>
-      <button id="reg">Go</button>
+    <div id="register" class="form">
+      <div class="form_title">
+        Register
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Username:
+        </div>
+        <input id="reg_uname" class="form_input"/>
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Password:
+        </div>
+        <input id="reg_pass" type="password" class="form_input"/>
+      </div>
+      <div class="feild right_aligned">
+        <button id="reg" class="form_button">register</button>
+      </div>
     </div>
-    <div id="authenticate">
-      Authenticate<br/>
-      <input id="auth_uname"/>
-      <input id="auth_pass"/>
-      <button id="auth"/>Go</button>
+    <hr/>
+    <div id="authenticate" class="form">
+      <div class="form_title">
+        Login
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Username:
+        </div>
+        <input id="auth_uname" class="form_input"/>
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Password:
+        </div>
+        <input type="password" id="auth_pass" class="form_input"/>
+      </div>
+      <div class="feild right_aligned">
+        <button id="auth" class="form_button"/>login</button>
+      </div>
     </div>
-    <div id="message">
-      Decrypt a message<br/>
-      <input id="mess_uname"/>
-      <textarea id="cleartext"></textarea>
-      <button id="send">Go</button>
+    <hr/>
+    <div id="message" class="form">
+      <div class="form_title">
+        Decrypt a message
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Username:
+        </div>
+        <input id="mess_uname" class="form_input"/>
+      </div>
+      <div class="feild">
+        <div class="feild_name">
+          Message:
+        </div>
+        <textarea id="cleartext" class="form_large_textarea"></textarea>
+      </div>
+      <div class="feild right_aligned">
+        <button id="send" class="form_button">send</button>
+      </div>
     </div>
   </body>
 </html>

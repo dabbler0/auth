@@ -99,7 +99,6 @@
     for (var i = message.length; i % 16 != 0; i += 1) {
       message += "\0";
     }
-    console.log(checksum);
     return {
       "ciphertext": CryptoJS.AES.encrypt(message, key, {iv:iv, mode : CryptoJS.mode.CBC}).ciphertext.toString(CryptoJS.enc.Base64),
       "checksum": checksum,
@@ -113,10 +112,10 @@
           ciphertext: CryptoJS.enc.Base64.parse(message.ciphertext),
           iv: CryptoJS.enc.Base64.parse(message.iv),
         });
-    var cleartext = CryptoJS.AES.decrypt(cipherparams, key, {iv: CryptoJS.enc.Base64.parse(message.iv)}).toString(CryptoJS.enc.Latin1),
-        checksum = CryptoJS.MD5(cleartext).toString(CryptoJS.enc.Hex);
+    var cleartext = CryptoJS.AES.decrypt(cipherparams, key, {iv: CryptoJS.enc.Base64.parse(message.iv)}).toString(CryptoJS.enc.Latin1).substr(0, message.length),
+        checksum = CryptoJS.MD5(cleartext).toString(CryptoJS.enc.Hex).toUpperCase();
     if (checksum == message.checksum) {
-      return cleartext.substr(0, message.length);
+      return cleartext;
     }
     else {
       //Our keys do not match or the channel is corrupted.
